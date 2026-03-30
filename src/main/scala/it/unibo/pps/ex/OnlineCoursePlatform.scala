@@ -1,7 +1,7 @@
 package it.unibo.pps.ex
 
 import it.unibo.pps.util.Optionals.Optional
-import it.unibo.pps.util.Sequences.* // Assuming Sequence and related methods are here
+import it.unibo.pps.util.Sequences.{Sequence, *} // Assuming Sequence and related methods are here
 
 // Represents a course offered on the platform
 trait Course:
@@ -12,7 +12,12 @@ trait Course:
 
 object Course:
   // Factory method for creating Course instances
-  def apply(courseId: String, title: String, instructor: String, category: String): Course = ???
+  def apply(courseId: String, title: String, instructor: String, category: String): Course = CourseImpl(courseId, title, instructor, category)
+
+  private case class CourseImpl(override val courseId: String,
+                                override val title: String,
+                                override val instructor: String,
+                                override val category: String) extends Course
 /**
  * Manages courses and student enrollments on an online learning platform.
  */
@@ -86,7 +91,7 @@ end OnlineCoursePlatform
 
 object OnlineCoursePlatform:
   // Factory method for creating an empty platform instance
-  def apply(): OnlineCoursePlatform = ??? // Fill Here!
+  def apply(): OnlineCoursePlatform = OnlineCoursePlatformImpl(Sequence.Nil(), Sequence.Nil())
 
 /**
  * Represents an online learning platform that offers courses and manages student enrollments.
@@ -101,6 +106,32 @@ object OnlineCoursePlatform:
  *  - Now start incrementally following the main given
  *
  */
+  private class OnlineCoursePlatformImpl(var courses: Sequence[Course], var enrollments: Sequence[(String, Course)]) extends OnlineCoursePlatform:
+
+    override def addCourse(course: Course): Unit = courses = courses.concat(Sequence.Cons(course, Sequence.Nil()))
+
+    override def findCoursesByCategory(category: String): Sequence[Course] = courses.filter(course => course.category == category)
+
+    override def getCourse(courseId: String): Optional[Course] = courses.find(course => course.courseId == courseId)
+
+    override def removeCourse(course: Course): Unit =  courses = courses.remove(course)
+
+    override def isCourseAvailable(courseId: String): Boolean = !getCourse(courseId).isEmpty
+
+    override def enrollStudent(studentId: String, courseId: String): Unit = getCourse(courseId) match
+      case Optional.Just(a) => enrollments = enrollments.concat(Sequence.Cons((studentId, a),Sequence.Nil()))
+
+    override def unenrollStudent(studentId: String, courseId: String): Unit = getCourse(courseId) match {case Optional.Just(a) => enrollments = enrollments.remove(studentId, a)}
+
+    override def getStudentEnrollments(studentId: String): Sequence[Course] =
+      extension(enrollments: Sequence[(String, Course)])
+        private def getEnrollments(studentId: String): Sequence[Course] = enrollments match
+          case Sequence.Cons((student, course), tail) => if student==studentId then Sequence.Cons(course, tail.getEnrollments(studentId)) else tail.getEnrollments(studentId)
+          case Sequence.Nil() => Sequence.Nil()
+      enrollments.getEnrollments(studentId)
+
+    override def isStudentEnrolled(studentId: String, courseId: String): Boolean = !getStudentEnrollments(studentId).find(course => course.courseId == courseId).isEmpty
+
 @main def mainPlatform(): Unit =
   val platform = OnlineCoursePlatform()
 
