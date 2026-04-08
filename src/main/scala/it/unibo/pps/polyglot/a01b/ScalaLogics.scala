@@ -23,8 +23,8 @@ class LogicsImpl(override val size: Int, override val mines: Int) extends ScalaL
     emptyPositionsHit += 1
     var result = 0
     for index <- 0 until mines do
-      val (mX, mY) = minesPositions(index)
-      if math.abs(mX - x) <= 1 && math.abs(mY - y) <= 1 then result += 1
+      val (mineX, mineY) = minesPositions(index)
+      if math.abs(mineX - x) <= 1 && math.abs(mineY - y) <= 1 then result += 1
     OptionToOptional(ScalaOptional.Just(result))
 
   override def won: Boolean = emptyPositionsHit == size * size - mines
