@@ -1,7 +1,9 @@
 package it.unibo.pps.ex
 
 import it.unibo.pps.util.Optionals.Optional
-import it.unibo.pps.util.Sequences.{Sequence, *} // Assuming Sequence and related methods are here
+import it.unibo.pps.util.Sequences.{Sequence, *}
+
+import scala.annotation.tailrec // Assuming Sequence and related methods are here
 
 // Represents a course offered on the platform
 trait Course:
@@ -18,6 +20,16 @@ object Course:
                                 override val title: String,
                                 override val instructor: String,
                                 override val category: String) extends Course
+
+object sameCategory:
+  def unapply(courses: Sequence[Course]): Option[String] = courses match
+    case Sequence.Cons(h, t) => _sameCategory(t, h.category)
+    case _ => Option.empty
+    @tailrec
+    def _sameCategory(courses: Sequence[Course], category: String): Option[String] = courses match
+      case Sequence.Cons(h, t) => if (h.category == category) then _sameCategory(t, category) else Option.empty
+      case _ => Option.apply(category)
+
 /**
  * Manages courses and student enrollments on an online learning platform.
  */
@@ -138,6 +150,11 @@ object OnlineCoursePlatform:
   val scalaCourse = Course("SCALA01", "Functional Programming in Scala", "Prof. Odersky", "Programming")
   val pythonCourse = Course("PYTHON01", "Introduction to Python", "Prof. van Rossum", "Programming")
   val designCourse = Course("DESIGN01", "UI/UX Design Fundamentals", "Prof. Norman", "Design")
+
+  val courses = Sequence(scalaCourse, pythonCourse, designCourse)
+  courses match
+    case sameCategory(cat) => println (s"All courses have same category: $cat")
+    case _ => println (s"The courses have different categories.")
 
   println(s"Is SCALA01 available? ${platform.isCourseAvailable(scalaCourse.courseId)}") // false
   platform.addCourse(scalaCourse)
